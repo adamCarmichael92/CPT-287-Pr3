@@ -89,66 +89,78 @@ public class main {
 	
 	
 	public static TreeNode infixToPostfix(String infixExp) {
-		// Initialize an empty stack
-		Stack<String> stk = new Stack<>();
-		// Initialize postfix string
-		StringBuilder postfix = new StringBuilder();
-				
+		//initialize two stacks: one for tree nodes and one for characters {operators, and "(", ")"}
+		Stack<TreeNode> stackNodes = new Stack<>();
+		Stack<String> stackChars = new Stack<>();
+		//Create nodes to build tree
+		TreeNode p = null, c1 = null, c2 = null;
+		
+		//Format string to include spaces
 		infixExp = format(infixExp);
-				
+		
+		//Scan through string
 		Scanner scanner = new Scanner(infixExp);
 		while (scanner.hasNext()) {
 			String token = scanner.next();
-			if (Character.isDigit(token.charAt(0))) { postfix.append(token).append(' '); }
-			// opening parenthesis
-			else if (token.equals("(")) { stk.push(token); }
-			// closing parenthesis
-			else if (token.equals(")")) {
-				while (!stk.peek().equals("(")) { postfix.append(stk.pop()).append(' '); }
-				stk.pop();
+			//If character is an open parentheses push to char stack
+			if (token.equals("(")) { 
+				stackChars.push(token); 
 			}
-			// operator
-			else {
-				while (!stk.isEmpty() && !stk.peek().equals("(") && precedence(token) <= precedence(stk.peek())) {
-		                  postfix.append(stk.pop()).append(' ');
+			//if character is an operand create tree node and push to node stack
+			else if (Character.isDigit(token.charAt(0))) {
+				p = new TreeNode(token);
+				stackNodes.push(p);
+			}
+			//If character is a closing parentheses
+			else if (token.equals(")")) {
+				while (!stackChars.isEmpty() && !stackChars.peek().equals("(")) {
+					//create a tree node with top operator in stack chars and remove it from the stack
+					p = new TreeNode(stackChars.pop());
+					//create tree nodes for the children and remove them from the nodes stack
+					c1 = stackNodes.peek();
+					stackNodes.pop();
+					c2 = stackNodes.peek();
+					stackNodes.pop();
+					//assign the children to the parent
+					p.left = c2;
+					p.right = c1;
+					//push parent back to node stack
+					stackNodes.push(p);
 				}
-					// Push the current operator onto the stack.
-		            stk.push(token);
+				stackChars.pop();
+			}
+			//If character is an operator
+			else {
+				//Check to see if chars stack is empty, has an open parentheses on top, and check the precedence of token
+				while (!stackChars.isEmpty() && !stackChars.peek().equals("(") && precedence(token) <= precedence(stackChars.peek())) {
+					//create a tree node with top operator in stack chars and remove it from the stack
+					p = new TreeNode(stackChars.peek());
+					stackChars.pop();
+					//create tree nodes for the children and remove them from the nodes stack
+					c1 = stackNodes.peek();
+					stackNodes.pop();
+					c2 = stackNodes.peek();
+					stackNodes.pop();
+					//assign the children to the parent
+					p.left = c2;
+					p.right = c1;
+					//push parent back to node stack
+					stackNodes.push(p);
+				}
+				stackChars.push(token);
 			}
 		}
-			// Pop the remaining operators from the stack and append them to the postfix expression string.
-		    while (!stk.isEmpty()) { postfix.append(stk.pop()).append(' '); }
-	        scanner.close();
-	        String postfixExp = postfix.toString();
-	        
-	        //Create expression tree with the postfix expression
-	        Stack<TreeNode> stack = new Stack<TreeNode>();
-	        Scanner scan = new Scanner(postfixExp);
-	        TreeNode p = null, c1 = null, c2 = null;
-	        while (scan.hasNext()) {
-	        	
-	        	String tkn = scan.next();
-	        	//if operand push to stack
-	        	if (Character.isDigit(tkn.charAt(0))) { 
-	        		p = new TreeNode(tkn);
-	        		stack.push(p);
-	        	} // if operator: create nodes of tree by
-	        	  // popping two values from stack and assign
-	        	  // them as the children of the operator
-	        	else {
-	        		p = new TreeNode(tkn);
-	        		c1 = stack.pop();
-	        		c2 = stack.pop();
-	        		p.right = c1;
-	        		p.left = c2;
-	        		//push parent to stack
-	        		stack.push(p);
-	        	}
-	        }
-	    scan.close();
-	    stack.pop();
-	    TreeNode root = p;
-		return root;
+		while (!stackChars.isEmpty() && !stackNodes.isEmpty()) {
+			p = new TreeNode(stackChars.pop());
+			c1 = stackNodes.pop();
+			c2 = stackNodes.pop();
+			p.right = c1;
+			p.left = c2;
+			stackNodes.push(p);
+		}
+		scanner.close();
+		p = stackNodes.peek();
+		return p;
 	}
 	
 	public static int evaluatePostfix(TreeNode root, Stack<Integer> stack) {
